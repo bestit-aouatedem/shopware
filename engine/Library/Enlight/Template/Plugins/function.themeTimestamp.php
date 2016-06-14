@@ -33,14 +33,8 @@ function smarty_function_themeTimestamp($params, $template)
     $context = Shopware()->Container()->get('shopware_storefront.context_service')->getShopContext();
     $shopId = $context->getShop()->getParentId();
 
-    $file = $pathResolver->getCacheDirectory() . DIRECTORY_SEPARATOR . 'timestamp' . $shopId . '.txt';
+    /** @var \Shopware\Components\Theme\Compiler $compiler */
+    $compiler = Shopware()->Container()->get('theme_compiler');
 
-    if (file_exists($file)) {
-        $timestamp = file_get_contents($file);
-    } else {
-        $timestamp = time();
-        file_put_contents($file, $timestamp);
-    }
-
-    return $timestamp;
+    return $compiler->getThemeTimestamp(Shopware()->Shop());
 }

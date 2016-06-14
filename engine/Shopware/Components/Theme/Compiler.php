@@ -332,14 +332,36 @@ class Compiler
      */
     public function getThemeTimestamp(Shop\Shop $shop)
     {
-        /**@var $pathResolver \Shopware\Components\Theme\PathResolver */
-        $file = $this->pathResolver->getCacheDirectory() . DIRECTORY_SEPARATOR . 'timestamp' . $shop->getId() . '.txt';
+        $timestamp = $this->getCurrentTimestamp($shop);
 
-        if (file_exists($file)) {
-            $timestamp = file_get_contents($file);
-        } else {
-            $timestamp = time();
-            $this->createThemeTimestamp($shop, $timestamp);
+        if ($timestamp) {
+            return (int)$timestamp;
+        }
+
+        $timestamp = time();
+        $this->createThemeTimestamp($shop, $timestamp);
+
+
+        return (int)$timestamp;
+    }
+
+
+    /**
+     * @param Shop\Shop $shop
+     * @return null|string
+     */
+    private function getCurrentTimestamp(Shop\Shop $shop)
+    {
+        $conn = Shopware()->Container()->get('dbal_connection');
+        $timestamp = $conn->fetchColumn(
+            'SELECT `value` FROM s_key_value WHERE `key` = "asset_version" AND shopId = :shopId',
+            [
+                'shopId' => $shop->getId(),
+            ]
+        );
+
+        if ($timestamp === false) {
+            return null;
         }
 
         return (int)$timestamp;
@@ -351,8 +373,14 @@ class Compiler
      */
     public function createThemeTimestamp(Shop\Shop $shop, $timestamp)
     {
-        $file = $this->pathResolver->getCacheDirectory() . DIRECTORY_SEPARATOR . 'timestamp' . $shop->getId() . '.txt';
-        file_put_contents($file, $timestamp);
+        $conn = Shopware()->Container()->get('dbal_connection');
+        $conn->executeUpdate(
+            'INSERT INTO s_key_value (`key`, `value`, shopId) VALUES ("asset_version", :value, :shopId) ON DUPLICATE KEY UPDATE `value` = :value',
+            [
+                'value' => $timestamp,
+                'shopId' => $shop->getId(),
+            ]
+        );
     }
 
     /**
