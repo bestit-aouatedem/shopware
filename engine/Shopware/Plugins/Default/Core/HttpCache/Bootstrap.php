@@ -976,7 +976,7 @@ class Shopware_Plugins_Core_HttpCache_Bootstrap extends Shopware_Components_Plug
             return false;
         }
 
-        if (!$this->request || $this->request->getHeader('Surrogate-Capability') === false) {
+        if (!$this->request) {
             return false;
         }
 
